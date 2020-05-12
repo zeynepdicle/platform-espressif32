@@ -49,11 +49,13 @@ class Espressif32Platform(PlatformBase):
         build_core = variables.get(
             "board_build.core", board_config.get("build.core", "arduino")).lower()
         if build_core == "mbcwb":
-            self.packages['toolchain-xtensa32']['version'] = "~2.50200.0"
             self.packages['framework-arduinoespressif32']['optional'] = True
             self.packages['framework-arduino-mbcwb']['optional'] = False
             self.packages['tool-mbctool']['type'] = "uploader"
             self.packages['tool-mbctool']['optional'] = False
+        if build_core == "mbcwb" or any(f in variables.get(
+                "pioframework", []) for f in ("simba", "pumba")):
+            self.packages['toolchain-xtensa32']['version'] = "~2.50200.0"
 
         return PlatformBase.configure_default_packages(self, variables,
                                                        targets)
