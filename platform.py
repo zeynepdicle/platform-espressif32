@@ -44,7 +44,6 @@ class Espressif32Platform(PlatformBase):
         if mcu == "esp32s2":
             self.packages.pop("toolchain-xtensa32", None)
             self.packages['toolchain-xtensa32s2']['optional'] = False
-            self.packages['tool-esptoolpy']['version'] = "~1.30000.0"
 
         build_core = variables.get(
             "board_build.core", board_config.get("build.core", "arduino")).lower()
