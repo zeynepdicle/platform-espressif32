@@ -53,7 +53,7 @@ class Espressif32Platform(PlatformBase):
             self.packages['tool-mbctool']['type'] = "uploader"
             self.packages['tool-mbctool']['optional'] = False
         if build_core == "mbcwb" or any(f in variables.get(
-                "pioframework", []) for f in ("simba", "pumba")):
+                "pioframework", []) for f in ("simba", "pumbaa")):
             self.packages['toolchain-xtensa32']['version'] = "~2.50200.0"
 
         return PlatformBase.configure_default_packages(self, variables,
