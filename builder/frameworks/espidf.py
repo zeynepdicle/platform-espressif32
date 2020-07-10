@@ -205,6 +205,7 @@ def build_lwip_lib(sdk_params):
     src_dirs = [
         "apps/dhcpserver",
         "apps/ping",
+        "apps/sntp",
         "lwip/src/api",
         "lwip/src/apps/sntp",
         "lwip/src/core",
@@ -264,6 +265,107 @@ def build_protocomm_lib(sdk_params):
         join(FRAMEWORK_DIR, "components", "protocomm"), config)
 
 
+def build_bt_lib(sdk_params):
+    inc_dirs = []
+    src_filter = ["-<*>", "+<*.c>", "+<common/osi>", "+<common/btc/core>"]
+    bt_component_path = join(FRAMEWORK_DIR, "components", "bt")
+
+    # Process Bluedroid sources
+    if is_set("CONFIG_BLUEDROID_ENABLED", sdk_params):
+        env.Append(
+            CPPPATH=[
+                join(bt_component_path, "bluedroid", "api", "include", "api")
+            ]
+        )
+
+        # Add bluedroid include paths
+        for root, dirs, _ in walk(join(bt_component_path, "bluedroid")):
+            for d in dirs:
+                if d == "include":
+                    inc_dirs.append(join(root, d))
+        inc_dirs.extend((
+            join(bt_component_path, "common", "btc", "include"),
+            join(bt_component_path, "common", "osi", "include"),
+            join(bt_component_path, "common", "include")
+        ))
+
+        src_filter.extend((
+            "+<bluedroid/bta>",
+            "+<bluedroid/btcore>",
+            "+<bluedroid/btif>",
+            "+<bluedroid/device>",
+            "+<bluedroid/gki>",
+            "+<bluedroid/hci>",
+            "+<bluedroid/main>",
+            "+<bluedroid/osi>",
+            "+<bluedroid/external>",
+            "+<bluedroid/btc/core>",
+            "+<bluedroid/btc/profile/esp/blufi>",
+            "+<bluedroid/btc/profile/std/gap>",
+            "+<bluedroid/btc/profile/std/gatt>",
+            "+<bluedroid/btc/profile/std/a2dp>",
+            "+<bluedroid/btc/profile/std/avrc>",
+            "+<bluedroid/btc/profile/std/spp>",
+            "+<bluedroid/btc/profile/std/hf_client>",
+            "+<bluedroid/stack>",
+            "+<bluedroid/utils>",
+            "+<bluedroid/api>"
+        ))
+
+    if is_set("CONFIG_BLE_MESH", sdk_params):
+        env.Append(CPPPATH=[join(bt_component_path, "common", "osi", "include")])
+        ble_mesh_inc_dirs = (
+            "esp_ble_mesh/mesh_common/include",
+            "esp_ble_mesh/mesh_core",
+            "esp_ble_mesh/mesh_core/include",
+            "esp_ble_mesh/mesh_core/storage",
+            "esp_ble_mesh/btc/include",
+            "esp_ble_mesh/mesh_models/common/include",
+            "esp_ble_mesh/mesh_models/client/include",
+            "esp_ble_mesh/mesh_models/server/include",
+            "esp_ble_mesh/api/core/include",
+            "esp_ble_mesh/api/models/include",
+            "esp_ble_mesh/api"
+        )
+
+        env.Append(
+            CPPPATH=[join(bt_component_path, d) for d in ble_mesh_inc_dirs]
+        )
+
+        src_filter.extend((
+            "+<esp_ble_mesh/mesh_common>",
+            "+<esp_ble_mesh/mesh_core/*.c>",
+            "+<esp_ble_mesh/mesh_core/storage>",
+            "+<esp_ble_mesh/btc>",
+            "+<esp_ble_mesh/mesh_models/client>",
+            "+<esp_ble_mesh/mesh_models/server>",
+            "+<esp_ble_mesh/api/core>",
+            "+<esp_ble_mesh/api/models>",
+        ))
+
+        # Process BLE mesh for Bluedroid
+        if is_set("CONFIG_BLUEDROID_ENABLED", sdk_params):
+            src_filter.append("+<esp_ble_mesh/mesh_core/bluedroid_host>")
+
+        # Process BLE mesh for Nimble
+        if is_set("CONFIG_NIMBLE_ENABLED", sdk_params):
+            inc_dirs.extend(
+                join(bt_component_path, "common", "btc", "include"),
+                join(bt_component_path, "common", "include")
+            )
+
+            src_filter.extend((
+                "+<esp_ble_mesh/mesh_core/nimble_host>"
+            ))
+
+    config = {
+        "inc_dirs": inc_dirs,
+        "src_filter": src_filter
+    }
+
+    return build_component(bt_component_path, config)
+
+
 def build_rtos_lib():
     config = {
         "cpp_defines": ["_ESP_FREERTOS_INTERNAL"],
@@ -312,7 +414,7 @@ def build_wpa_supplicant_lib():
         join(FRAMEWORK_DIR, "components", "wpa_supplicant"), config)
 
 
-def build_wifi_provisioning_lib():
+def build_wifi_provisioning_lib(sdk_params):
     src_filter = "-<*>"
     for d in ["proto-c", "src"]:
         src_filter += " +<%s>" % d
@@ -330,6 +432,51 @@ def build_wifi_provisioning_lib():
 
     return build_component(
         join(FRAMEWORK_DIR, "components", "wifi_provisioning"), config)
+
+
+def build_nimble_lib(sdk_params):
+    nimble_component_path = join(FRAMEWORK_DIR, "components", "nimble")
+    inc_dirs = []
+    # Add Nimble include paths
+    for root, dirs, _ in walk(join(nimble_component_path, "nimble")):
+        for d in dirs:
+            if d == "include":
+                inc_dirs.append(join(root, d))
+
+    src_filter = [
+        "-<*>",
+        "+<nimble/nimble/host/src>",
+        "+<nimble/porting/nimble/src>",
+        "+<nimble/porting/npl/freertos/src>",
+        "+<nimble/nimble/host/services/ans/src>",
+        "+<nimble/nimble/host/services/bas/src>",
+        "+<nimble/nimble/host/services/gap/src>",
+        "+<nimble/nimble/host/services/gatt/src>",
+        "+<nimble/nimble/host/services/ias/src>",
+        "+<nimble/nimble/host/services/lls/src>",
+        "+<nimble/nimble/host/services/tps/src>",
+        "+<nimble/nimble/host/util/src>",
+        "+<nimble/nimble/host/store/ram/src>",
+        "+<nimble/nimble/host/store/config/src>",
+        "-<nimble/nimble/host/store/config/src/ble_store_config_conf.c>"
+        "+<esp-hci/src>",
+        "+<port/src>"
+    ]
+
+    if is_set("CONFIG_NIMBLE_CRYPTO_STACK_MBEDTLS", sdk_params):
+        inc_dirs.append(join(
+            nimble_component_path, "nimble", "ext", "tinycrypt", "include"))
+        src_filter.append("+<nimble/ext/tinycrypt/src>")
+
+    if is_set("CONFIG_NIMBLE_MESH", sdk_params):
+        inc_dirs.append(join(
+            nimble_component_path, "nimble", "nimble", "host", "mesh", "include"))
+        src_filter.append("+<nimble/nimble/host/mesh/src>")
+
+    if inc_dirs:
+        env.Append(CPPPATH=inc_dirs)
+
+    return build_component(nimble_component_path, {"src_filter": src_filter})
 
 
 def build_heap_lib(sdk_params):
@@ -552,7 +699,6 @@ env.Prepend(
         join(FRAMEWORK_DIR, "components", "bootloader_support", "include"),
         join(FRAMEWORK_DIR, "components", "bootloader_support", "include_bootloader"),
         join(FRAMEWORK_DIR, "components", "bt", "include"),
-        join(FRAMEWORK_DIR, "components", "bt", "bluedroid", "api", "include", "api"),
         join(FRAMEWORK_DIR, "components", "coap", "port", "include"),
         join(FRAMEWORK_DIR, "components", "coap", "port", "include", "coap"),
         join(FRAMEWORK_DIR, "components", "coap", "libcoap", "include"),
@@ -587,6 +733,7 @@ env.Prepend(
         join(FRAMEWORK_DIR, "components", "libsodium", "port_include"),
         join(FRAMEWORK_DIR, "components", "log", "include"),
         join(FRAMEWORK_DIR, "components", "lwip", "include", "apps"),
+        join(FRAMEWORK_DIR, "components", "lwip", "include", "apps", "sntp"),
         join(FRAMEWORK_DIR, "components", "lwip", "lwip", "src", "include"),
         join(FRAMEWORK_DIR, "components", "lwip", "port", "esp32", "include"),
         join(FRAMEWORK_DIR, "components", "lwip", "port", "esp32", "include", "arch"),
@@ -601,6 +748,7 @@ env.Prepend(
         join(FRAMEWORK_DIR, "components", "nghttp", "port", "include"),
         join(FRAMEWORK_DIR, "components", "newlib", "platform_include"),
         join(FRAMEWORK_DIR, "components", "newlib", "include"),
+        join(FRAMEWORK_DIR, "components", "nimble", "include"),
         join(FRAMEWORK_DIR, "components", "nvs_flash", "include"),
         join(FRAMEWORK_DIR, "components", "openssl", "include"),
         join(FRAMEWORK_DIR, "components", "protobuf-c", "protobuf-c"),
@@ -643,12 +791,6 @@ env.Prepend(
         "gcc", "stdc++"
     ]
 )
-
-for root, dirs, _ in walk(join(
-        FRAMEWORK_DIR, "components", "bt", "bluedroid")):
-    for d in dirs:
-        if (d == "include"):
-            env.Prepend(CPPPATH=[join(root, d)])
 
 env.Prepend(
     CFLAGS=["-Wno-old-style-declaration"],
@@ -728,7 +870,7 @@ def process_project_configs(filename):
         is_new = False
         with open(config) as fp:
             for l in fp.readlines():
-                if "CONFIG_APP_COMPILE_TIME_DATE" in l:
+                if "CONFIG_IDF_FIRMWARE_CHIP_ID" in l:
                     is_new = True
                     break
 
@@ -824,11 +966,13 @@ special_src_filter = {
 }
 
 special_env = (
+    "bt",
     "freertos",
     "heap",
     "lwip",
     "protocomm",
     "libsodium",
+    "nimble",
     "wpa_supplicant",
     "wifi_provisioning"
 )
@@ -849,14 +993,18 @@ for component, src_filter in special_src_filter.items():
             join(FRAMEWORK_DIR, "components", component), config))
 
 libs.extend((
+    build_bt_lib(sdk_params),
     build_lwip_lib(sdk_params),
     build_protocomm_lib(sdk_params),
     build_heap_lib(sdk_params),
     build_rtos_lib(),
     build_libsodium_lib(),
     build_wpa_supplicant_lib(),
-    build_wifi_provisioning_lib()
+    build_wifi_provisioning_lib(sdk_params)
 ))
+
+if is_set("CONFIG_NIMBLE_ENABLED", sdk_params):
+    libs.append(build_nimble_lib(sdk_params))
 
 project_sections = env.Command(
     join("$BUILD_DIR", "ldgen.section_infos"), libs, generate_section_info)
