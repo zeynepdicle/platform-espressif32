@@ -884,10 +884,10 @@ def process_project_configs(filename):
             copy(new_config, config)
 
 
-process_project_configs("sdkconfig")
+if "arduino" not in env.subst("$PIOFRAMEWORK"):
+    process_project_configs("sdkconfig")
+    process_project_configs("sdkconfig.h")
 sdk_config = join(env.subst("$PROJECT_SRC_DIR"), "sdkconfig")
-
-process_project_configs("sdkconfig.h")
 sdk_config_header = join(env.subst("$PROJECT_SRC_DIR"), "sdkconfig.h")
 sdk_params = get_sdk_configuration(sdk_config_header)
 

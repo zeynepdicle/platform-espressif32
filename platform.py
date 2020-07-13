@@ -27,6 +27,9 @@ class Espressif32Platform(PlatformBase):
         if isdir("ulp"):
             self.packages['toolchain-esp32ulp']['optional'] = False
 
+        if all(f in variables.get("pioframework", []) for f in ("arduino", "espidf")):
+            self.packages['framework-espidf']['version'] = "~3.30300.0"
+
         return PlatformBase.configure_default_packages(self, variables,
                                                        targets)
 
