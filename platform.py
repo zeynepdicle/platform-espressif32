@@ -95,15 +95,6 @@ class Espressif32Platform(PlatformBase):
                 elif p in ("tool-mconf", "tool-idf") and "windows" in get_systype():
                     self.packages[p]["optional"] = False
 
-            # Toolchains for stable IDF are different from Arduino
-            if len(frameworks) == 1:
-                for toolchain in (
-                    "toolchain-xtensa-esp32",
-                    "toolchain-xtensa-esp32s2",
-                    "toolchain-riscv32-esp",
-                ):
-                    self.packages[toolchain]["version"] = "8.4.0+2021r2-patch2"
-
         if mcu in ("esp32s2", "esp32c3"):
             self.packages.pop("toolchain-xtensa-esp32", None)
             self.packages.pop("toolchain-esp32ulp", None)
@@ -170,6 +161,7 @@ class Espressif32Platform(PlatformBase):
         debug = board.manifest.get("debug", {})
         non_debug_protocols = ["esptool", "espota", "mbctool"]
         supported_debug_tools = [
+            "cmsis-dap",
             "esp-prog",
             "iot-bus-jtag",
             "jlink",
@@ -198,6 +190,8 @@ class Espressif32Platform(PlatformBase):
                 continue
 
             if link == "jlink":
+                openocd_interface = link
+            elif link == "cmsis-dap":
                 openocd_interface = link
             elif link in ("esp-prog", "ftdi"):
                 if board.id == "esp32-s2-kaluga-1":
@@ -340,7 +334,6 @@ class Espressif32Platform(PlatformBase):
         toolchain_remap = {
             "xtensa-esp32-elf-gcc": "toolchain-xtensa-esp32",
             "xtensa-esp32s2-elf-gcc": "toolchain-xtensa-esp32s2",
-            "xtensa-esp32s3-elf-gcc": "toolchain-xtensa-esp32s3",
             "riscv32-esp-elf-gcc": "toolchain-riscv32-esp",
         }
 
@@ -397,6 +390,7 @@ class Espressif32Platform(PlatformBase):
                 self.packages[toolchain_package] = dict()
             self.packages[toolchain_package]["version"] = version
             self.packages[toolchain_package]["owner"] = "espressif"
+            self.packages[toolchain_package]["type"] = "toolchain"
 
     def configure_upstream_arduino_packages(self, url_items):
         framework_index_file = os.path.join(
